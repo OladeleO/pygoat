@@ -1,0 +1,11 @@
+name: Kubernetes Linting
+on: [push, pull_request]
+jobs:
+  kube-lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: KubeLinter
+      uses: stackrox/kube-linter-action@v1
+      with:
+        directory: ./k8s
