@@ -19,16 +19,20 @@ jobs:
       run: |
         wget https://github.com/jeremylong/DependencyCheck/releases/download/v6.5.3/dependency-check-6.5.3-release.zip
         unzip dependency-check-6.5.3-release.zip -d dependency-check
+        ls -alh dependency-check/
 
     - name: List directory contents
       run: ls -alh
 
     - name: List Dependency Check directory contents
-      run: ls -alh dependency-check/
+      run: ls -alh dependency-check/*
 
     - name: Run Dependency Check
       run: |
-        ./dependency-check/bin/dependency-check.sh --project "MyProject" --scan . --out . --format HTML --failOnCVSS 7
+        ${GITHUB_WORKSPACE}/dependency-check/dependency-check/bin/dependency-check.sh --project "MyProject" --scan . --out . --format HTML --failOnCVSS 7
+
+    - name: Ensure script is executable
+      run: chmod +x ${GITHUB_WORKSPACE}/dependency-check/dependency-check/bin/dependency-check.sh
 
     - name: Upload Dependency Check Report
       uses: actions/upload-artifact@v2
