@@ -29,7 +29,7 @@ jobs:
 
     - name: Run Dependency Check
       run: |
-        ${GITHUB_WORKSPACE}/dependency-check/dependency-check/bin/dependency-check.sh --project "MyProject" --scan . --out . --format HTML --failOnCVSS 7
+        ${GITHUB_WORKSPACE}/dependency-check/dependency-check/bin/dependency-check.sh --project "MyProject" --scan . --out . --format HTML --failOnCVSS 7 --disableAssembly
 
     - name: Ensure script is executable
       run: chmod +x ${GITHUB_WORKSPACE}/dependency-check/dependency-check/bin/dependency-check.sh
@@ -39,3 +39,8 @@ jobs:
       with:
         name: dependency-check-report
         path: dependency-check-report.html
+
+
+
+
+  
