@@ -17,10 +17,7 @@ jobs:
           sudo mv gitleaks /usr/local/bin/
 
       - name: Run GitLeaks
-        run: gitleaks detect --source='.'
-        env:
-          GITLEAKS_CONFIG: .gitleaks.toml
-
+        run: gitleaks detect --source='.' --config-path=gitleaks.toml
 
 
   dependency-check:
