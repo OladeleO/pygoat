@@ -9,17 +9,23 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: '3.8'
-    - name: Install Dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-    - name: OWASP Dependency Check
-      uses: jeremylong/DependencyCheck_Action@v1
-      with:
-        project: "PyGoat"
-        failBuildOnCVSS: 7 # Adjust the CVSS score threshold as needed
-    - name: Upload Test results
-      uses: actions/upload-artifact@master
-      with:
-        name: Depcheck report
-        path: ${{github.workspace}}/reports
+
+    - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Download Dependency-Check
+        run: |
+          wget https://github.com/jeremylong/DependencyCheck/releases/download/v6.5.3/dependency-check-6.5.3-release.zip
+          unzip dependency-check-6.5.3-release.zip -d dependency-check
+
+      - name: Run Dependency Check
+        run: |
+          ./dependency-check/bin/dependency-check.sh --project "MyProject" --scan . --out . --format HTML --failOnCVSS 7
+
+      - name: Upload Dependency Check Report
+        uses: actions/upload-artifact@v2
+        with:
+          name: dependency-check-report
+          path: dependency-check-report.html
