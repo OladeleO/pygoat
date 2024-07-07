@@ -17,10 +17,7 @@ jobs:
         run: |
           docker-compose build
           docker-compose up -d db
-          docker-compose run --rm web pwd
-          docker-compose run --rm web ls -la
-          docker-compose run --rm web find / -name manage.py
-          docker-compose run --rm web python manage.py migrate --noinput
+          docker-compose run --rm web python /app/manage.py migrate --noinput
           docker-compose up -d web
         
       - name: Wait for application to be ready
