@@ -66,13 +66,15 @@ jobs:
           target: 'http://localhost:8000'
           docker_name: 'zaproxy/zap-stable'
           fail_action: false
-          cmd_options: '-r zap_report.html'
+          cmd_options: '-r /zap/wrk/zap_report.html'
+        env:
+          WORKSPACE: ${{ github.workspace }}
 
       - name: Upload ZAP Report
         uses: actions/upload-artifact@v2
         with:
           name: zap-report
-          path: zap_report.html  # The directory where ZAP reports are saved
+          path: zap_reports/zap_report.html  # The directory where ZAP reports are saved
 
 
       - name: Upload ZAP Logs
