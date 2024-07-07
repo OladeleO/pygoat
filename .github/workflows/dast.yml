@@ -1,5 +1,5 @@
 name: DAST
-on: [deployment]
+on: [push, pull_request]
 jobs:
   dast:
     runs-on: ubuntu-latest
