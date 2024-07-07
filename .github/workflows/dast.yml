@@ -13,12 +13,36 @@ jobs:
           sudo chown -R 1000:1000 ./data/db
           sudo chmod -R 777 ./data/db
 
-      - name: Build and start services
+      - name: Build Docker image
+        run: docker build -t pygoat/pygoat .
+
+
+      - name: Start database
         run: |
-          docker-compose build
-          docker-compose up -d db
-          docker-compose run --rm web python /app/manage.py migrate --noinput
-          docker-compose up -d web
+          docker network create pygoat_network
+          docker run -d --name pygoat_db --network pygoat_network \
+            -e POSTGRES_DB=postgres -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres \
+            -v $PWD/data/db:/var/lib/postgresql/data postgres
+
+      - name: Run migrations
+        run: |
+          docker run --rm --network pygoat_network \
+            -v $PWD:/app -w /app pygoat/pygoat \
+            python manage.py migrate --noinput
+
+      - name: Start web application
+        run: |
+          docker run -d --name pygoat_web --network pygoat_network \
+            -p 8000:8000 -v $PWD:/app -w /app pygoat/pygoat \
+            gunicorn --bind 0.0.0.0:8000 --workers 6 pygoat.wsgi
+
+      - name: Check running containers
+        run: docker ps
+
+
+      - name: Check web container logs
+        run: docker logs pygoat_web
+      
         
       - name: Wait for application to be ready
         run: |
