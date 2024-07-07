@@ -6,15 +6,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
   
-      - name: Check Docker
+      - name: Build and start services
         run: |
-          docker info
-          docker ps
-  
-      - name: Start Application
-        run: |
-          docker-compose up -d
-          docker-compose logs
+          docker-compose build
+          docker-compose up -d db
+          docker-compose run --rm migration
+          docker-compose up -d web
   
       - name: Wait for application to be ready
         run: |
@@ -37,3 +34,7 @@ jobs:
         with:
           target: 'http://localhost:8000'
           docker_name: 'owasp/zap2docker-stable'
+  
+      - name: Cleanup
+        if: always()
+        run: docker-compose down -v
