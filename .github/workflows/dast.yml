@@ -70,8 +70,8 @@ jobs:
         env:
           WORKSPACE: ${{ github.workspace }}
 
-      - name: Move ZAP Report
-        run: mv zap_report.html ${{ github.workspace }}/zap_reports/zap_report.html
+      - name: Fix ZAP Report Permissions
+        run: sudo chown -R 1000:1000 ${{ github.workspace }}/zap_reports && sudo chmod -R 777 ${{ github.workspace }}/zap_reports
 
       - name: Upload ZAP Report
         uses: actions/upload-artifact@v2
