@@ -69,7 +69,7 @@ jobs:
           target: 'http://localhost:8000'
           docker_name: 'zaproxy/zap-stable'
           fail_action: false
-          cmd_options: '-r zap_report.html'
+          cmd_options: '-r /zap/wrk/zap_report.html'
         env:
           WORKSPACE: ${{ github.workspace }}
 
