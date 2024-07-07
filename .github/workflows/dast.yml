@@ -6,16 +6,17 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-
       - name: Set up directory permissions
         run: |
-          sudo mkdir -p ./data/db
-          sudo chown -R 1000:1000 ./data/db
-          sudo chmod -R 777 ./data/db
+          mkdir -p ${{ github.workspace }}/data/db
+          mkdir -p ${{ github.workspace }}/zap_reports
+          sudo chown -R 1000:1000 ${{ github.workspace }}/data/db
+          sudo chown -R 1000:1000 ${{ github.workspace }}/zap_reports
+          sudo chmod -R 777 ${{ github.workspace }}/data/db
+          sudo chmod -R 777 ${{ github.workspace }}/zap_reports
 
       - name: Build Docker image
         run: docker build -t pygoat/pygoat .
-
 
       - name: Start database
         run: |
@@ -39,11 +40,9 @@ jobs:
       - name: Check running containers
         run: docker ps
 
-
       - name: Check web container logs
         run: docker logs pygoat_web
-      
-        
+              
       - name: Wait for application to be ready
         run: |
           max_retries=60
@@ -74,8 +73,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: zap-report
-          path: zap_reports/zap_report.html  # The directory where ZAP reports are saved
-
+          path: ${{ github.workspace }}/zap_reports/zap_report.html
 
       - name: Upload ZAP Logs
         if: always()
