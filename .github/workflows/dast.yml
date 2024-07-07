@@ -67,14 +67,13 @@ jobs:
           docker_name: 'zaproxy/zap-stable'
           fail_action: false
           rules_file_name: '.zap/rules.tsv'
-          cmd_options: '-configfile .zap/config.xml -daemon -port 8080'  
-          reports_dir: './zap_reports' 
+          cmd_options: '-r zap_report.html'
 
       - name: Upload ZAP Report
         uses: actions/upload-artifact@v2
         with:
           name: zap-report
-          path: ./zap_reports  # The directory where ZAP reports are saved
+          path: zap_report.html  # The directory where ZAP reports are saved
 
 
       - name: Upload ZAP Logs
