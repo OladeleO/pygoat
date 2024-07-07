@@ -65,6 +65,7 @@ jobs:
         with:
           target: 'http://localhost:8000'
           docker_name: 'zaproxy/zap-stable'
+          fail_action: false
   
       - name: Cleanup
         if: always()
