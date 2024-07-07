@@ -7,17 +7,16 @@ jobs:
       - uses: actions/checkout@v3
 
 
-      - name: Check container structure
+      - name: Set up directory permissions
         run: |
-          docker-compose run --rm web ls -R /app
-          docker-compose run --rm web pwd
-  
+          sudo mkdir -p ./data/db
+          sudo chown -R 1000:1000 ./data/db
+          sudo chmod -R 777 ./data/db
+
       - name: Build and start services
         run: |
           docker-compose build
           docker-compose up -d db
-          docker-compose run --rm web python -c "import os; print(os.getcwd()); print(os.listdir('.'))"
-          docker-compose run --rm web find . -name manage.py
           docker-compose run --rm web python manage.py migrate --noinput
           docker-compose up -d web
   
