@@ -56,33 +56,22 @@ jobs:
           name: bandit-report
           path: bandit-report.txt
 
-  container-scan:
+  container-and-dast-scan:
     needs: sast
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+
       - name: Build Docker Image
-        run: docker build -t pygoat:latest .
-      - name: Scan Docker Image
+        run: |
+          docker build -t pygoat:latest .
+          docker images  # List images to confirm pygoat:latest is built
+
+      - name: Scan Docker Image with Trivy
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'pygoat:latest'
-      - name: Upload Trivy scan report
-        uses: actions/upload-artifact@v2
-        with:
-          name: trivy-report
-          path: trivy-report.json
-
-  dast:
-    needs: container-scan
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Verify Docker Image Exists
-        run: |
-          docker images | grep pygoat || (echo "Docker image 'pygoat:latest' not found" && exit 1)
-  
+      
       - name: Run Docker Container
         run: |
           docker run -d -p 8000:8000 --name pygoat-container pygoat:latest
@@ -101,11 +90,13 @@ jobs:
           report_format: 'html'
           output: 'zap-report.html'
 
-      - name: Upload OWASP ZAP Report
+      - name: Upload Reports
         uses: actions/upload-artifact@v2
         with:
-          name: zap-report
-          path: zap-report.html
+          name: scan-reports
+          path: |
+            trivy-report.json
+            zap-report.html
 
       - name: Stop and Remove Docker Container
         run: |
