@@ -78,16 +78,104 @@ jobs:
         name: trivy-report
         path: trivy-report.json
 
-
-
-  dast:
+  deploy-to-kubernetes:
     needs: container-scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Install kubectl
+        run: |
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x ./kubectl
+          sudo mv ./kubectl /usr/local/bin/kubectl
+          kubectl version --client
+
+      - name: Create Kubernetes Manifests
+        run: |
+          mkdir -p k8s
+          cat <<EOF > k8s/deployment.yaml
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: pygoat-deployment
+            labels:
+              app: pygoat
+          spec:
+            replicas: 2
+            selector:
+              matchLabels:
+                app: pygoat
+            template:
+              metadata:
+                labels:
+                  app: pygoat
+              spec:
+                containers:
+                - name: pygoat
+                  image: pygoat:latest
+                  ports:
+                  - containerPort: 8000
+                  env:
+                  - name: PYGOAT_ENV
+                    value: "production"
+          EOF
+  
+          cat <<EOF > k8s/service.yaml
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: pygoat-service
+            labels:
+              app: pygoat
+          spec:
+            selector:
+              app: pygoat
+            ports:
+              - protocol: TCP
+                port: 8000
+                targetPort: 8000
+            type: ClusterIP
+          EOF
+      
+      - name: Deploy to Kubernetes
+        env:
+          KUBECONFIG: ${{ secrets.KUBECONFIG }}  # Ensure you have your kubeconfig in GitHub Secrets
+        run: |
+          kubectl apply -f k8s/deployment.yaml
+          kubectl apply -f k8s/service.yaml
+          
+      - name: Wait for Deployment to be ready
+        run: |
+          kubectl rollout status deployment/pygoat-deployment --timeout=300s
+
+  k8s-security-checks:
+    needs: deploy-to-kubernetes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Checkov Scan
+        uses: bridgecrewio/checkov-action@master
+        with:
+          args: '--directory k8s/'  # Point to your dynamically created Kubernetes manifest directory
+          
+      - name: Kube-bench Scan
+        run: |
+          docker run --rm -v $(pwd)/k8s:/kube-bench kube-bench --config-dir /kube-bench/cfg --benchmark gke-1.0 --version 1.23
+
+
+
+  
+  dast:
+    needs: k8s-security-checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
   
-      - name: Start Application
-        run: docker-compose up -d
+      - name: Start Application (Kubernetes)
+        run: |
+          kubectl port-forward service/pygoat-service 8000:8000 &
   
       - name: Wait for application to be ready
         run: |
