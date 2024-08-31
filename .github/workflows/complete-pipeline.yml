@@ -73,7 +73,7 @@ jobs:
           name: trivy-report
           path: trivy-report.json
 
-   dast:
+  dast:
     needs: container-scan
     runs-on: ubuntu-latest
     steps:
