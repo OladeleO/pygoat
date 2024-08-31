@@ -84,21 +84,19 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v2
 
-      - name: Install Minikube
+      - name: Start Minikube Container
         run: |
-          curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-          chmod +x minikube
-          sudo mv minikube /usr/local/bin/
+          docker run --privileged -d --name minikube --hostname minikube --cpus=2 --memory=2g \
+          -v /var/run/docker.sock:/var/run/docker.sock \
+          -v $HOME/.minikube:/root/.minikube \
+          -v $HOME/.kube:/root/.kube \
+          -v /usr/local/bin/kubectl:/usr/local/bin/kubectl \
+          gcr.io/k8s-minikube/kicbase:v0.0.30
 
-      - name: Start Minikube
+      - name: Verify Minikube is Running
         run: |
-          sudo minikube start --driver=none
-          sudo chown -R $USER $HOME/.kube $HOME/.minikube
-          export KUBECONFIG=$HOME/.kube/config
-
-      - name: Verify Minikube Installation
-        run: |
-          kubectl get nodes
+          docker exec -it minikube minikube start --driver=docker
+          docker exec -it minikube kubectl get nodes
 
       - name: Create Kubernetes Manifests
         run: |
@@ -146,16 +144,16 @@ jobs:
 
       - name: Deploy to Minikube
         run: |
-          kubectl apply -f k8s/deployment.yaml
-          kubectl apply -f k8s/service.yaml
+          docker exec -it minikube kubectl apply -f k8s/deployment.yaml
+          docker exec -it minikube kubectl apply -f k8s/service.yaml
 
       - name: Wait for Deployment to be Ready
         run: |
-          kubectl rollout status deployment/pygoat-deployment --timeout=300s
+          docker exec -it minikube kubectl rollout status deployment/pygoat-deployment --timeout=300s
 
       - name: Expose Minikube Service
         run: |
-          minikube service pygoat-service --url
+          docker exec -it minikube minikube service pygoat-service --url
 
   k8s-security-checks:
     needs: deploy-to-kubernetes
