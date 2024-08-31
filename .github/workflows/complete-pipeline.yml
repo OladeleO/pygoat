@@ -97,19 +97,20 @@ jobs:
           rm -f crictl-$VERSION-linux-amd64.tar.gz
 
 
-      - name: Install Go 1.23
+      - name: Install Go 1.20
         run: |
-          wget https://golang.org/dl/go1.23.linux-amd64.tar.gz
-          sudo tar -C /usr/local -xzf go1.23.linux-amd64.tar.gz
+          wget https://golang.org/dl/go1.20.linux-amd64.tar.gz
+          sudo tar -C /usr/local -xzf go1.20.linux-amd64.tar.gz
+          echo "export PATH=\$PATH:/usr/local/go/bin" >> $HOME/.bashrc
           export PATH=$PATH:/usr/local/go/bin
           go version
 
       - name: Install cri-dockerd
         run: |
-          export PATH=$PATH:/usr/local/go/bin  # Ensure Go 1.23 is in the PATH
+          export PATH=$PATH:/usr/local/go/bin
           git clone https://github.com/Mirantis/cri-dockerd.git
           cd cri-dockerd
-          sed -i 's/^go 1.22/go 1.23/' go.mod  # Fix the Go version in go.mod
+          sed -i 's/^go 1\.23/go 1.20/' go.mod  # Use a stable Go version
           mkdir bin
           go build -o bin/cri-dockerd
           sudo mv bin/cri-dockerd /usr/local/bin/
