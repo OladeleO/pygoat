@@ -96,6 +96,19 @@ jobs:
           sudo tar zxvf crictl-$VERSION-linux-amd64.tar.gz -C /usr/local/bin
           rm -f crictl-$VERSION-linux-amd64.tar.gz
 
+
+      - name: Install cri-dockerd
+        run: |
+          sudo apt-get install -y golang-go
+          git clone https://github.com/Mirantis/cri-dockerd.git
+          cd cri-dockerd
+          mkdir bin
+          go build -o bin/cri-dockerd
+          sudo mv bin/cri-dockerd /usr/local/bin/
+          sudo cri-dockerd &
+          cd ..
+          rm -rf cri-dockerd
+
       - name: Install Minikube
         run: |
           curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
