@@ -97,12 +97,18 @@ jobs:
           rm -f crictl-$VERSION-linux-amd64.tar.gz
 
 
-      - name: Install cri-dockerd (Pre-built)
+      - name: Install cri-dockerd
         run: |
-          curl -LO https://github.com/Mirantis/cri-dockerd/releases/download/v0.2.6/cri-dockerd-0.2.6.amd64.tgz
-          sudo tar -C /usr/local/bin -xzf cri-dockerd-0.2.6.amd64.tgz
-          rm cri-dockerd-0.2.6.amd64.tgz
+          sudo apt-get install -y golang-go
+          git clone https://github.com/Mirantis/cri-dockerd.git
+          cd cri-dockerd
+          sed -i 's/^go 1.22/go 1.23/' go.mod  # Fix the Go version in go.mod
+          mkdir bin
+          go build -o bin/cri-dockerd
+          sudo mv bin/cri-dockerd /usr/local/bin/
           sudo cri-dockerd &
+          cd ..
+          rm -rf cri-dockerd
 
       - name: Install Minikube
         run: |
