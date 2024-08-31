@@ -86,22 +86,18 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v2
 
-      - name: Start Minikube Container
+      - name: Install Minikube
         run: |
-          docker run --privileged -d --name minikube --hostname minikube --cpus=2 --memory=2g \
-          -v /var/run/docker.sock:/var/run/docker.sock \
-          -v $HOME/.minikube:/root/.minikube \
-          -v $HOME/.kube:/root/.kube \
-          -v /usr/local/bin/kubectl:/usr/local/bin/kubectl \
-          gcr.io/k8s-minikube/kicbase:v0.0.30
+          curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+          sudo install minikube /usr/local/bin/
 
-      - name: Start Minikube Inside Container
+      - name: Start Minikube
         run: |
-          docker exec minikube minikube start --driver=docker
+          sudo minikube start --driver=docker
 
       - name: Verify Minikube is Running
         run: |
-          docker exec minikube kubectl get nodes
+          minikube kubectl -- get nodes
 
       - name: Create Kubernetes Manifests
         run: |
