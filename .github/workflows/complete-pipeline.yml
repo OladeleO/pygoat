@@ -91,6 +91,49 @@ jobs:
           sudo mv ./kubectl /usr/local/bin/kubectl
           kubectl version --client
 
+
+      - name: Create Service Account and Generate KUBECONFIG
+        run: |
+          # Create a Service Account in the default namespace
+          kubectl create serviceaccount github-actions-sa
+
+          # Bind the Service Account to the cluster-admin role
+          kubectl create clusterrolebinding github-actions-sa-binding \
+            --clusterrole=cluster-admin \
+            --serviceaccount=default:github-actions-sa
+
+          # Get the Service Account's token
+          SECRET_NAME=$(kubectl get serviceaccount github-actions-sa -o jsonpath='{.secrets[0].name}')
+          TOKEN=$(kubectl get secret $SECRET_NAME -o jsonpath='{.data.token}' | base64 --decode)
+
+          # Get the Kubernetes API Server address
+          CLUSTER_URL=$(kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}')
+
+          # Get the certificate authority data
+          CA_CERT=$(kubectl config view --minify -o jsonpath='{.clusters[0].cluster.certificate-authority-data}')
+
+          # Create a KUBECONFIG file using the Service Account token
+          mkdir -p $HOME/.kube
+          cat <<EOF > $HOME/.kube/config
+          apiVersion: v1
+          kind: Config
+          clusters:
+          - cluster:
+              server: $CLUSTER_URL
+              certificate-authority-data: $CA_CERT
+            name: my-cluster
+          contexts:
+          - context:
+              cluster: my-cluster
+              user: github-actions-sa
+            name: my-context
+          current-context: my-context
+          users:
+          - name: github-actions-sa
+            user:
+              token: $TOKEN
+          EOF
+
       - name: Create Kubernetes Manifests
         run: |
           mkdir -p k8s
