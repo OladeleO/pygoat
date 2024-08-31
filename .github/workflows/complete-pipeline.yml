@@ -78,6 +78,8 @@ jobs:
         name: trivy-report
         path: trivy-report.json
 
+  
+  
   deploy-to-kubernetes:
     runs-on: ubuntu-latest
     steps:
@@ -93,10 +95,13 @@ jobs:
           -v /usr/local/bin/kubectl:/usr/local/bin/kubectl \
           gcr.io/k8s-minikube/kicbase:v0.0.30
 
+      - name: Start Minikube Inside Container
+        run: |
+          docker exec minikube minikube start --driver=docker
+
       - name: Verify Minikube is Running
         run: |
-          docker exec -it minikube minikube start --driver=docker
-          docker exec -it minikube kubectl get nodes
+          docker exec minikube kubectl get nodes
 
       - name: Create Kubernetes Manifests
         run: |
