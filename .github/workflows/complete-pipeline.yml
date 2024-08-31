@@ -72,9 +72,9 @@ jobs:
         with:
           image-ref: 'pygoat:latest'
       
-      - name: Run Docker Container
+      - name: Run Docker Container with Command Override
         run: |
-          docker run -d -p 8000:8000 --name pygoat-container pygoat:latest
+          docker run -d -p 8000:8000 --name pygoat-container pygoat:latest gunicorn -w 4 -b 0.0.0.0:8000 app:app
           sleep 10
 
       - name: Test Application is Running
