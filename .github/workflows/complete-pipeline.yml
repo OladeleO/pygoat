@@ -5,8 +5,8 @@ on: [push, pull_request]
 jobs:
 
   dependency-check:
-      runs-on: ubuntu-latest
-      steps:
+    runs-on: ubuntu-latest
+    steps:
       - uses: actions/checkout@v2
       - name: Set up Python
         uses: actions/setup-python@v2
@@ -37,213 +37,73 @@ jobs:
           name: dependency-check-report
           path: dependency-check-report.html
 
-
-
   sast:
     needs: dependency-check
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.8'
-    - name: Run Bandit Scan
-      run: |
-        pip install bandit
-        bandit -r . -ll -iii --exit-zero -o bandit-report.txt -f txt || echo "Bandit scan completed with issues"
-    - name: Upload Bandit Report as an Artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: bandit-report
-        path: bandit-report.txt
-
-
-
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+      - name: Run Bandit Scan
+        run: |
+          pip install bandit
+          bandit -r . -ll -iii --exit-zero -o bandit-report.txt -f txt || echo "Bandit scan completed with issues"
+      - name: Upload Bandit Report as an Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: bandit-report
+          path: bandit-report.txt
 
   container-scan:
     needs: sast
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Build Docker Image
-      run: docker build -t pygoat:latest .
-    - name: Scan Docker Image
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: 'pygoat:latest'
-    - name: Upload Trivy scan report
-      uses: actions/upload-artifact@v2
-      with:
-        name: trivy-report
-        path: trivy-report.json
+      - uses: actions/checkout@v2
+      - name: Build Docker Image
+        run: docker build -t pygoat:latest .
+      - name: Scan Docker Image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'pygoat:latest'
+      - name: Upload Trivy scan report
+        uses: actions/upload-artifact@v2
+        with:
+          name: trivy-report
+          path: trivy-report.json
 
-  
-  
-  deploy-to-kubernetes:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v2
-
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y conntrack
-          # Install crictl
-          VERSION="v1.25.0"
-          curl -LO https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-$VERSION-linux-amd64.tar.gz
-          sudo tar zxvf crictl-$VERSION-linux-amd64.tar.gz -C /usr/local/bin
-          rm -f crictl-$VERSION-linux-amd64.tar.gz
-
-
-      - name: Install Go 1.20
-        run: |
-          wget https://golang.org/dl/go1.20.linux-amd64.tar.gz
-          sudo tar -C /usr/local -xzf go1.20.linux-amd64.tar.gz
-          echo "export PATH=\$PATH:/usr/local/go/bin" >> $HOME/.bashrc
-          export PATH=$PATH:/usr/local/go/bin
-          go version
-
-      - name: Install cri-dockerd
-        run: |
-          export PATH=$PATH:/usr/local/go/bin
-          git clone https://github.com/Mirantis/cri-dockerd.git
-          cd cri-dockerd
-          sed -i 's/^go 1\.23/go 1.20/' go.mod  # Use a stable Go version
-          mkdir bin
-          go build -o bin/cri-dockerd
-          sudo mv bin/cri-dockerd /usr/local/bin/
-          sudo cp -a packaging/systemd/* /etc/systemd/system/
-          sudo systemctl daemon-reload
-          sudo systemctl enable cri-docker.service
-          sudo systemctl enable --now cri-docker.socket
-          cd ..
-          rm -rf cri-dockerd
-
-      - name: Install Minikube
-        run: |
-          curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-          sudo install minikube /usr/local/bin/
-
-      - name: Install CNI Plugins
-        run: |
-          sudo mkdir -p /opt/cni/bin
-          curl -L https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz | sudo tar -C /opt/cni/bin -xz
-
-      - name: Start Minikube with None Driver (Verbose)
-        run: |
-          sudo minikube start --driver=none --v=8 --alsologtostderr
-          sudo minikube status
-          sudo minikube kubectl -- get nodes
-
-
-      - name: Verify Minikube is Running
-        run: |
-          minikube kubectl -- get nodes
-
-      - name: Create Kubernetes Manifests
-        run: |
-          mkdir -p k8s
-          cat <<EOF > k8s/deployment.yaml
-          apiVersion: apps/v1
-          kind: Deployment
-          metadata:
-            name: pygoat-deployment
-            labels:
-              app: pygoat
-          spec:
-            replicas: 1
-            selector:
-              matchLabels:
-                app: pygoat
-            template:
-              metadata:
-                labels:
-                  app: pygoat
-              spec:
-                containers:
-                - name: pygoat
-                  image: vulnerables/pygoat:latest
-                  ports:
-                  - containerPort: 8000
-          EOF
-
-          cat <<EOF > k8s/service.yaml
-          apiVersion: v1
-          kind: Service
-          metadata:
-            name: pygoat-service
-            labels:
-              app: pygoat
-          spec:
-            selector:
-              app: pygoat
-            ports:
-              - protocol: TCP
-                port: 8000
-                targetPort: 8000
-            type: ClusterIP
-          EOF
-
-      - name: Deploy to Minikube
-        run: |
-          docker exec -it minikube kubectl apply -f k8s/deployment.yaml
-          docker exec -it minikube kubectl apply -f k8s/service.yaml
-
-      - name: Wait for Deployment to be Ready
-        run: |
-          docker exec -it minikube kubectl rollout status deployment/pygoat-deployment --timeout=300s
-
-      - name: Expose Minikube Service
-        run: |
-          docker exec -it minikube minikube service pygoat-service --url
-
-  k8s-security-checks:
-    needs: deploy-to-kubernetes
+  dast:
+    needs: container-scan
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      
-      - name: Checkov Scan
-        uses: bridgecrewio/checkov-action@master
-        with:
-          args: '--directory k8s/'  # Point to your dynamically created Kubernetes manifest directory
-          
-      - name: Kube-bench Scan
+  
+      - name: Run Docker Container
         run: |
-          docker run --rm -v $(pwd)/k8s:/kube-bench kube-bench --config-dir /kube-bench/cfg --benchmark gke-1.0 --version 1.23
+          docker run -d -p 8000:8000 --name pygoat-container pygoat:latest
+          sleep 10
 
-
-
-  
-  dast:
-    needs: k8s-security-checks
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-  
-      - name: Start Application (Kubernetes)
+      - name: Test Application is Running
         run: |
-          kubectl port-forward service/pygoat-service 8000:8000 &
-  
-      - name: Wait for application to be ready
-        run: |
-          max_retries=30
-          retries=0
-          until curl -sSf http://localhost:8000 > /dev/null || [ $retries -eq $max_retries ]
-          do
-            echo "Waiting for application to be ready..."
-            sleep 5
-            retries=$((retries+1))
-          done
-          if [ $retries -eq $max_retries ]; then
-            echo "Application failed to start in time"
-            exit 1
-          fi
-  
-      - name: OWASP ZAP Scan
-        uses: zaproxy/action-full-scan@v0.4.0
+          curl -I http://localhost:8000
+
+      - name: OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.6.0
         with:
           target: 'http://localhost:8000'
           docker_name: 'owasp/zap2docker-stable'
+          report: true
+          report_format: 'html'
+          output: 'zap-report.html'
+
+      - name: Upload OWASP ZAP Report
+        uses: actions/upload-artifact@v2
+        with:
+          name: zap-report
+          path: zap-report.html
+
+      - name: Stop and Remove Docker Container
+        run: |
+          docker stop pygoat-container
+          docker rm pygoat-container
