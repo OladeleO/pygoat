@@ -78,6 +78,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+
+      - name: Verify Docker Image Exists
+        run: |
+          docker images | grep pygoat || (echo "Docker image 'pygoat:latest' not found" && exit 1)
   
       - name: Run Docker Container
         run: |
