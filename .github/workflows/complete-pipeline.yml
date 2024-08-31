@@ -79,60 +79,26 @@ jobs:
         path: trivy-report.json
 
   deploy-to-kubernetes:
-    needs: container-scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      
-      - name: Install kubectl
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Install Minikube
         run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-          chmod +x ./kubectl
-          sudo mv ./kubectl /usr/local/bin/kubectl
-          kubectl version --client
+          curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+          chmod +x minikube
+          sudo mv minikube /usr/local/bin/
 
-
-      - name: Create Service Account and Generate KUBECONFIG
+      - name: Start Minikube
         run: |
-          # Create a Service Account in the default namespace
-          kubectl create serviceaccount github-actions-sa
+          sudo minikube start --driver=none
+          sudo chown -R $USER $HOME/.kube $HOME/.minikube
+          export KUBECONFIG=$HOME/.kube/config
 
-          # Bind the Service Account to the cluster-admin role
-          kubectl create clusterrolebinding github-actions-sa-binding \
-            --clusterrole=cluster-admin \
-            --serviceaccount=default:github-actions-sa
-
-          # Get the Service Account's token
-          SECRET_NAME=$(kubectl get serviceaccount github-actions-sa -o jsonpath='{.secrets[0].name}')
-          TOKEN=$(kubectl get secret $SECRET_NAME -o jsonpath='{.data.token}' | base64 --decode)
-
-          # Get the Kubernetes API Server address
-          CLUSTER_URL=$(kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}')
-
-          # Get the certificate authority data
-          CA_CERT=$(kubectl config view --minify -o jsonpath='{.clusters[0].cluster.certificate-authority-data}')
-
-          # Create a KUBECONFIG file using the Service Account token
-          mkdir -p $HOME/.kube
-          cat <<EOF > $HOME/.kube/config
-          apiVersion: v1
-          kind: Config
-          clusters:
-          - cluster:
-              server: $CLUSTER_URL
-              certificate-authority-data: $CA_CERT
-            name: my-cluster
-          contexts:
-          - context:
-              cluster: my-cluster
-              user: github-actions-sa
-            name: my-context
-          current-context: my-context
-          users:
-          - name: github-actions-sa
-            user:
-              token: $TOKEN
-          EOF
+      - name: Verify Minikube Installation
+        run: |
+          kubectl get nodes
 
       - name: Create Kubernetes Manifests
         run: |
@@ -145,7 +111,7 @@ jobs:
             labels:
               app: pygoat
           spec:
-            replicas: 2
+            replicas: 1
             selector:
               matchLabels:
                 app: pygoat
@@ -156,14 +122,11 @@ jobs:
               spec:
                 containers:
                 - name: pygoat
-                  image: pygoat:latest
+                  image: vulnerables/pygoat:latest
                   ports:
                   - containerPort: 8000
-                  env:
-                  - name: PYGOAT_ENV
-                    value: "production"
           EOF
-  
+
           cat <<EOF > k8s/service.yaml
           apiVersion: v1
           kind: Service
@@ -180,17 +143,19 @@ jobs:
                 targetPort: 8000
             type: ClusterIP
           EOF
-      
-      - name: Deploy to Kubernetes
-        env:
-          KUBECONFIG: ${{ secrets.KUBECONFIG }}  # Ensure you have your kubeconfig in GitHub Secrets
+
+      - name: Deploy to Minikube
         run: |
           kubectl apply -f k8s/deployment.yaml
           kubectl apply -f k8s/service.yaml
-          
-      - name: Wait for Deployment to be ready
+
+      - name: Wait for Deployment to be Ready
         run: |
           kubectl rollout status deployment/pygoat-deployment --timeout=300s
+
+      - name: Expose Minikube Service
+        run: |
+          minikube service pygoat-service --url
 
   k8s-security-checks:
     needs: deploy-to-kubernetes
