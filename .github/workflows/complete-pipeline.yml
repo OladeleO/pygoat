@@ -114,7 +114,10 @@ jobs:
           mkdir bin
           go build -o bin/cri-dockerd
           sudo mv bin/cri-dockerd /usr/local/bin/
-          sudo cri-dockerd &
+          sudo cp -a packaging/systemd/* /etc/systemd/system/
+          sudo systemctl daemon-reload
+          sudo systemctl enable cri-docker.service
+          sudo systemctl enable --now cri-docker.socket
           cd ..
           rm -rf cri-dockerd
 
