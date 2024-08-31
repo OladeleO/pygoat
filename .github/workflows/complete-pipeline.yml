@@ -73,7 +73,7 @@ jobs:
           name: trivy-report
           path: trivy-report.json
 
-  dast:
+   dast:
     needs: container-scan
     runs-on: ubuntu-latest
     steps:
@@ -86,7 +86,7 @@ jobs:
 
       - name: Test Application is Running
         run: |
-          curl -I http://localhost:8000
+          curl -I http://localhost:8000 || (echo "Application failed to start" && docker logs pygoat-container && exit 1)
 
       - name: OWASP ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.6.0
