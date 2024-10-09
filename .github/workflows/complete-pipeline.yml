@@ -98,7 +98,7 @@ jobs:
             trivy-report.json
             zap-report.html
 
-      - name: Stop and Remove Docker Container
+      - name: Stop and Remove Docker Containerrr
         run: |
           docker stop pygoat-container
           docker rm pygoat-container
