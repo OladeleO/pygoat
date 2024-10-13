@@ -52,9 +52,9 @@ jobs:
       - name: List Files in Directory
         run: ls -alh .
 
-      # Explicitly use v4 to upload the artifact
+      # Explicitly use an exact version of v4 to upload the artifact
       - name: Upload Dependency Check Report
-        uses: actions/upload-artifact@v4  # Ensure v4 is used
+        uses: actions/upload-artifact@v4.0.2  # Explicitly pin exact version
         with:
           name: dependency-check-report
           path: dependency-check-report.html
@@ -75,9 +75,9 @@ jobs:
           pip install bandit
           bandit -r . -ll -iii --exit-zero -o bandit-report.txt -f txt || echo "Bandit scan completed with issues"
 
-      # Explicitly use v4 to upload the artifact
+      # Explicitly use an exact version of v4 to upload the artifact
       - name: Upload Bandit Report as an Artifact
-        uses: actions/upload-artifact@v4  # Ensure v4 is used
+        uses: actions/upload-artifact@v4.0.2  # Explicitly pin exact version
         with:
           name: bandit-report
           path: bandit-report.txt
@@ -119,9 +119,9 @@ jobs:
       - name: List Files in Directory
         run: ls -alh .
 
-      # Explicitly use v4 to upload the artifact
+      # Explicitly use an exact version of v4 to upload the artifact
       - name: Upload Reports
-        uses: actions/upload-artifact@v4  # Ensure v4 is used
+        uses: actions/upload-artifact@v4.0.2  # Explicitly pin exact version
         with:
           name: scan-reports
           path: |
