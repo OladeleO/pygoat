@@ -29,9 +29,7 @@ jobs:
 
       - name: Run Safety (SCA Scan) and Generate HTML Report
         run: |
-          safety check --file=requirements.txt --full-report --output safety-report.json
-          # Convert JSON to HTML using a simple Python script
-          python -c "import json; import sys; from yattag import Doc; data=json.load(open('safety-report.json')); doc, tag, text=Doc().tagtext(); doc.asis('<!DOCTYPE html>'); with tag('html'): with tag('body'): with tag('h1'): text('Safety Vulnerability Report'); for issue in data['vulnerabilities']: with tag('p'): text(f'Package: {issue['package_name']} | Vulnerability: {issue['vulnerability']}'); with open('safety-report.html', 'w') as f: f.write(doc.getvalue())"
+          safety check --file=requirements.txt --full-report --output html > safety-report.html
 
       - name: Verify Safety HTML Report Exists
         run: |
