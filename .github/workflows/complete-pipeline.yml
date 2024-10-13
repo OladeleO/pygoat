@@ -1,6 +1,10 @@
 name: CI/CD Pipeline
 
-on: [push, pull_request]
+# Trigger pipeline on push, pull_request, and manual workflow_dispatch
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
 
 jobs:
 
@@ -8,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
@@ -24,13 +29,18 @@ jobs:
           unzip dependency-check-6.5.3-release.zip -d dependency-check
           ls -alh dependency-check/
 
+      - name: Ensure script is executable
+        run: chmod +x ${GITHUB_WORKSPACE}/dependency-check/dependency-check/bin/dependency-check.sh
+
       - name: Run Dependency Check
         run: |
           ${GITHUB_WORKSPACE}/dependency-check/dependency-check/bin/dependency-check.sh --project "MyProject" --scan . --out . --format HTML --failOnCVSS 9 --disableAssembly || echo "Vulnerabilities found"
 
-      - name: Ensure script is executable
-        run: chmod +x ${GITHUB_WORKSPACE}/dependency-check/dependency-check/bin/dependency-check.sh
+      # Step to verify file presence
+      - name: List Files in Directory
+        run: ls -alh .
 
+      # Upload the dependency check report
       - name: Upload Dependency Check Report
         uses: actions/upload-artifact@v4
         with:
@@ -46,10 +56,13 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: '3.8'
+
       - name: Run Bandit Scan
         run: |
           pip install bandit
           bandit -r . -ll -iii --exit-zero -o bandit-report.txt -f txt || echo "Bandit scan completed with issues"
+      
+      # Upload the Bandit report
       - name: Upload Bandit Report as an Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -90,6 +103,11 @@ jobs:
           report_format: 'html'
           output: 'zap-report.html'
 
+      # Step to verify file presence before uploading
+      - name: List Files in Directory
+        run: ls -alh .
+
+      # Upload the Trivy and OWASP ZAP reports
       - name: Upload Reports
         uses: actions/upload-artifact@v4
         with:
