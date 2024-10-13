@@ -34,14 +34,14 @@ jobs:
           ${GITHUB_WORKSPACE}/dependency-check/dependency-check/bin/dependency-check.sh --project "MyProject" --scan . --out . --format HTML --failOnCVSS 9 --disableAssembly || echo "Vulnerabilities found"
 
       - name: List Files in Directory (Debugging Step)
-        run: ls -alh .  # Confirm the files exist after running the Dependency Check
+        run: ls -alh .
 
       # Upload the Dependency Check report as an artifact
       - name: Upload Dependency Check Report
         uses: actions/upload-artifact@v3
         with:
-          name: github-pages-artifact  # Ensure artifact name is consistent
-          path: ./dependency-check-report.html  # Specify the report path
+          name: github-pages-artifact
+          path: ./dependency-check-report.html
 
   sast:
     needs: dependency-check
@@ -63,8 +63,8 @@ jobs:
       - name: Upload Bandit Report
         uses: actions/upload-artifact@v3
         with:
-          name: github-pages-artifact  # Use the same artifact name for both jobs
-          path: ./bandit-report.txt  # Specify the Bandit report path
+          name: github-pages-artifact
+          path: ./bandit-report.txt
 
   deploy:
     needs: [dependency-check, sast]
@@ -73,7 +73,17 @@ jobs:
       pages: write
       id-token: write
     steps:
+      - name: Check for Symlinks (Debugging Step)
+        run: |
+          echo "Checking for symlinks..."
+          find . -type l || echo "No symlinks found."
+
+      - name: Check Directory Size (Debugging Step)
+        run: |
+          echo "Checking directory size..."
+          du -sh .  # Check the total size of the directory
+
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v1
         with:
-          artifact_name: github-pages-artifact  # Ensure artifact name matches the upload steps
+          artifact_name: github-pages-artifact
