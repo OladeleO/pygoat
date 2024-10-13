@@ -11,7 +11,7 @@ jobs:
   sca-safety:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3  # Checkout code
+      - uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -29,7 +29,7 @@ jobs:
 
       - name: Run Safety (SCA Scan) and Generate HTML Report
         run: |
-          safety check --file=requirements.txt --output safety-report.html
+          safety scan --file=requirements.txt --output html --save-html safety-report.html
 
       - name: Verify Safety HTML Report Exists
         run: |
@@ -39,7 +39,6 @@ jobs:
             echo "Error: Safety HTML report not found!" && exit 1
           fi
 
-      # Upload the Safety HTML report as an artifact
       - name: Upload Safety HTML Report
         uses: actions/upload-artifact@v3
         with:
@@ -50,7 +49,7 @@ jobs:
     needs: sca-safety
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3  # Checkout code
+      - uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -70,7 +69,6 @@ jobs:
             echo "Error: Bandit HTML report not found!" && exit 1
           fi
 
-      # Upload the Bandit HTML report as an artifact
       - name: Upload Bandit HTML Report
         uses: actions/upload-artifact@v3
         with:
