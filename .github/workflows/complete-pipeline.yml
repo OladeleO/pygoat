@@ -8,48 +8,7 @@ on:
 
 jobs:
 
-  dependency-check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3  # Checkout code
-
-      - name: Set up Python
-        uses: actions/setup-python@v4  # Set up Python 3.8
-        with:
-          python-version: '3.8'
-
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Download Dependency-Check
-        run: |
-          wget https://github.com/jeremylong/DependencyCheck/releases/download/v6.5.3/dependency-check-6.5.3-release.zip
-          unzip dependency-check-6.5.3-release.zip -d dependency-check
-          ls -alh dependency-check/
-
-      - name: Run Dependency Check
-        run: |
-          ${GITHUB_WORKSPACE}/dependency-check/dependency-check/bin/dependency-check.sh --project "MyProject" --scan . --out . --format HTML --failOnCVSS 9 --disableAssembly || echo "Vulnerabilities found"
-
-      - name: Verify Dependency Check Report Exists
-        run: |
-          if [ -f "dependency-check-report.html" ]; then
-            echo "Dependency Check report generated successfully."
-          else
-            echo "Error: Dependency Check report not found!" && exit 1
-          fi
-
-      # Upload the Dependency Check report as an artifact
-      - name: Upload Dependency Check Report
-        uses: actions/upload-artifact@v3
-        with:
-          name: github-pages-artifact
-          path: ./dependency-check-report.html
-
-  sast:
-    needs: dependency-check
+  sca-safety:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3  # Checkout code
@@ -59,22 +18,63 @@ jobs:
         with:
           python-version: '3.8'
 
-      - name: Run Bandit Scan
+      - name: Install Python dependencies
         run: |
-          pip install bandit
-          bandit -r . -ll -iii --exit-zero -o bandit-report.txt -f txt || echo "Bandit scan completed with issues"
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-      - name: Verify Bandit Report Exists
+      - name: Install Safety
         run: |
-          if [ -f "bandit-report.txt" ]; then
-            echo "Bandit report generated successfully."
+          pip install safety
+
+      - name: Run Safety (SCA Scan) and Generate HTML Report
+        run: |
+          safety check --file=requirements.txt --full-report --output safety-report.json
+          # Convert JSON to HTML using a simple Python script
+          python -c "import json; import sys; from yattag import Doc; data=json.load(open('safety-report.json')); doc, tag, text=Doc().tagtext(); doc.asis('<!DOCTYPE html>'); with tag('html'): with tag('body'): with tag('h1'): text('Safety Vulnerability Report'); for issue in data['vulnerabilities']: with tag('p'): text(f'Package: {issue['package_name']} | Vulnerability: {issue['vulnerability']}'); with open('safety-report.html', 'w') as f: f.write(doc.getvalue())"
+
+      - name: Verify Safety HTML Report Exists
+        run: |
+          if [ -f "safety-report.html" ]; then
+            echo "Safety HTML report generated successfully."
           else
-            echo "Error: Bandit report not found!" && exit 1
+            echo "Error: Safety HTML report not found!" && exit 1
           fi
 
-      # Upload the Bandit report as an artifact
-      - name: Upload Bandit Report
+      # Upload the Safety HTML report as an artifact
+      - name: Upload Safety HTML Report
         uses: actions/upload-artifact@v3
         with:
-          name: github-pages-artifact
-          path: ./bandit-report.txt
+          name: safety-sca-html-report
+          path: ./safety-report.html
+
+  sast-bandit:
+    needs: sca-safety
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3  # Checkout code
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+
+      - name: Run Bandit (SAST Scan) and Generate HTML Report
+        run: |
+          pip install bandit
+          bandit -r . -ll -iii -f html -o bandit-report.html || echo "Bandit scan completed with issues"
+
+      - name: Verify Bandit HTML Report Exists
+        run: |
+          if [ -f "bandit-report.html" ]; then
+            echo "Bandit HTML report generated successfully."
+          else
+            echo "Error: Bandit HTML report not found!" && exit 1
+          fi
+
+      # Upload the Bandit HTML report as an artifact
+      - name: Upload Bandit HTML Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: bandit-sast-html-report
+          path: ./bandit-report.html
