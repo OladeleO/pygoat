@@ -40,9 +40,9 @@ jobs:
       - name: List Files in Directory
         run: ls -alh .
 
-      # Explicitly use v4 to upload the artifact
+      # Explicitly use v4 to upload the artifact and force fetch the latest version
       - name: Upload Dependency Check Report
-        uses: actions/upload-artifact@v4  # Updated to v4
+        uses: actions/upload-artifact@v4  # Explicitly force v4
         with:
           name: dependency-check-report
           path: dependency-check-report.html
@@ -63,9 +63,9 @@ jobs:
           pip install bandit
           bandit -r . -ll -iii --exit-zero -o bandit-report.txt -f txt || echo "Bandit scan completed with issues"
 
-      # Explicitly use v4 to upload the artifact
+      # Explicitly use v4 to upload the artifact and force fetch the latest version
       - name: Upload Bandit Report as an Artifact
-        uses: actions/upload-artifact@v4  # Updated to v4
+        uses: actions/upload-artifact@v4  # Explicitly force v4
         with:
           name: bandit-report
           path: bandit-report.txt
@@ -107,9 +107,9 @@ jobs:
       - name: List Files in Directory
         run: ls -alh .
 
-      # Upload the Trivy and OWASP ZAP reports
+      # Explicitly use v4 to upload the artifact and force fetch the latest version
       - name: Upload Reports
-        uses: actions/upload-artifact@v4  # Updated to v4
+        uses: actions/upload-artifact@v4  # Explicitly force v4
         with:
           name: scan-reports
           path: |
