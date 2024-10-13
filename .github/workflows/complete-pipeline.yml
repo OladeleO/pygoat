@@ -7,7 +7,6 @@ on:
   workflow_dispatch:
 
 jobs:
-
   sca-trivy:
     runs-on: ubuntu-latest
     steps:
@@ -21,7 +20,7 @@ jobs:
 
       - name: Run Trivy SCA Scan
         run: |
-          trivy fs --scanners vuln --severity HIGH,CRITICAL --format json -o trivy-report.json .
+          trivy fs --security-checks vuln --severity HIGH,CRITICAL --format json -o trivy-report.json .
 
       - name: Upload Trivy JSON Report
         uses: actions/upload-artifact@v3
