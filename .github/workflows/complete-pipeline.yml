@@ -29,7 +29,7 @@ jobs:
 
       - name: Run Safety (SCA Scan) and Generate HTML Report
         run: |
-          safety check --file=requirements.txt --full-report --output html > safety-report.html
+          safety check --file=requirements.txt --output safety-report.html
 
       - name: Verify Safety HTML Report Exists
         run: |
