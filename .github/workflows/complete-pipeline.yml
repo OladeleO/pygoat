@@ -11,18 +11,18 @@ jobs:
   dependency-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      
+      - uses: actions/checkout@v3  # Updated to v3
+
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4  # Updated to v4
         with:
           python-version: '3.8'
-  
+
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-  
+
       - name: Download Dependency-Check
         run: |
           wget https://github.com/jeremylong/DependencyCheck/releases/download/v6.5.3/dependency-check-6.5.3-release.zip
@@ -42,7 +42,7 @@ jobs:
 
       # Explicitly use v4 to upload the artifact
       - name: Upload Dependency Check Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4  # Updated to v4
         with:
           name: dependency-check-report
           path: dependency-check-report.html
@@ -51,9 +51,10 @@ jobs:
     needs: dependency-check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3  # Updated to v3
+
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4  # Updated to v4
         with:
           python-version: '3.8'
 
@@ -61,10 +62,10 @@ jobs:
         run: |
           pip install bandit
           bandit -r . -ll -iii --exit-zero -o bandit-report.txt -f txt || echo "Bandit scan completed with issues"
-      
+
       # Explicitly use v4 to upload the artifact
       - name: Upload Bandit Report as an Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4  # Updated to v4
         with:
           name: bandit-report
           path: bandit-report.txt
@@ -73,4 +74,49 @@ jobs:
     needs: sast
     runs-on: ubuntu-latest
     steps:
-      - uses:
+      - uses: actions/checkout@v3  # Updated to v3
+
+      - name: Build Docker Image
+        run: |
+          docker build -t pygoat:latest .
+          docker images  # List images to confirm pygoat:latest is built
+
+      - name: Scan Docker Image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'pygoat:latest'
+
+      - name: Run Docker Container with Command Override
+        run: |
+          docker run -d -p 8000:8000 --name pygoat-container pygoat:latest gunicorn -w 4 -b 0.0.0.0:8000 app:app
+          sleep 10
+
+      - name: Test Application is Running
+        run: |
+          curl -I http://localhost:8000 || (echo "Application failed to start" && docker logs pygoat-container && exit 1)
+
+      - name: OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.6.0
+        with:
+          target: 'http://localhost:8000'
+          docker_name: 'owasp/zap2docker-stable'
+          report: true
+          report_format: 'html'
+
+      # Step to verify file presence before uploading
+      - name: List Files in Directory
+        run: ls -alh .
+
+      # Upload the Trivy and OWASP ZAP reports
+      - name: Upload Reports
+        uses: actions/upload-artifact@v4  # Updated to v4
+        with:
+          name: scan-reports
+          path: |
+            trivy-report.json
+            zap-report.html
+
+      - name: Stop and Remove Docker Container
+        run: |
+          docker stop pygoat-container
+          docker rm pygoat-container
