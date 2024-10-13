@@ -40,7 +40,8 @@ jobs:
       - name: Upload Dependency Check Report
         uses: actions/upload-pages-artifact@v1
         with:
-          path: ./dependency-check-report.html  # Specify the report path
+          path: ./dependency-check-report.html  # Correctly specify the single file
+          name: dependency-check-report  # Optional: give the artifact a name
 
   sast:
     needs: dependency-check
@@ -62,7 +63,8 @@ jobs:
       - name: Upload Bandit Report
         uses: actions/upload-pages-artifact@v1
         with:
-          path: ./bandit-report.txt  # Specify the Bandit report path
+          path: ./bandit-report.txt  # Correctly specify the single file
+          name: bandit-report  # Optional: give the artifact a name
 
   deploy:
     needs: [dependency-check, sast]
