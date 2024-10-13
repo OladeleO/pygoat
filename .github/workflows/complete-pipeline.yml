@@ -32,7 +32,7 @@ jobs:
         run: chmod +x ${GITHUB_WORKSPACE}/dependency-check/dependency-check/bin/dependency-check.sh
 
       - name: Upload Dependency Check Report
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: dependency-check-report
           path: dependency-check-report.html
@@ -91,14 +91,14 @@ jobs:
           output: 'zap-report.html'
 
       - name: Upload Reports
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: scan-reports
           path: |
             trivy-report.json
             zap-report.html
 
-      - name: Stop and Remove Docker Containerrr
+      - name: Stop and Remove Docker Container
         run: |
           docker stop pygoat-container
           docker rm pygoat-container
