@@ -41,7 +41,7 @@ jobs:
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}  # Use the built-in GitHub token
-          publish_dir: .  # This directory should contain your artifact (e.g., dependency-check-report.html)
+          publish_dir: ./dependency-check-report.html  # Directory should contain your artifact (e.g., dependency-check-report.html)
 
   sast:
     needs: dependency-check
@@ -63,8 +63,8 @@ jobs:
       - name: Deploy Bandit report to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}  # Use the built-in GitHub token
-          publish_dir: .  # This directory should contain your artifact (e.g., bandit-report.txt)
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./bandit-report.txt  # Directory should contain your artifact (e.g., bandit-report.txt)
 
   container-and-dast-scan:
     needs: sast
@@ -103,4 +103,13 @@ jobs:
         run: ls -alh .
 
       # Deploy Trivy and OWASP ZAP reports to GitHub Pages
-      - name:
+      - name: Deploy Trivy and ZAP reports to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./  # Ensure artifacts (trivy-report.json, zap-report.html) are in this directory
+
+      - name: Stop and Remove Docker Container
+        run: |
+          docker stop pygoat-container
+          docker rm pygoat-container
