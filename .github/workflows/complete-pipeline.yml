@@ -86,15 +86,15 @@ jobs:
       pages: write
       id-token: write
     steps:
-      - name: Check for Symlinks (Debugging Step)
+      - name: Check for Symlinks (Recursive Search)
         run: |
-          echo "Checking for symlinks..."
-          find . -type l || echo "No symlinks found."
+          echo "Checking for symlinks across the workspace..."
+          find . -type l -exec ls -lah {} \; || echo "No symlinks found."
 
-      - name: Check Directory Size (Debugging Step)
+      - name: Check for Hard Links
         run: |
-          echo "Checking directory size..."
-          du -sh .  # Check the total size of the directory
+          echo "Checking for hard links..."
+          find . -type f -links +1 || echo "No hard links found."
 
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v1
