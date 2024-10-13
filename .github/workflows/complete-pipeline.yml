@@ -8,7 +8,19 @@ on:
 
 jobs:
 
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      # This step clears the cache of the runner for old actions and tools
+      - name: Clear Runner Cache
+        run: |
+          echo "Clearing GitHub Runner Cache"
+          rm -rf ${{ runner.tool_cache }}
+          rm -rf ${{ runner.cache }}
+          echo "Cache cleared"
+
   dependency-check:
+    needs: setup  # Ensure cache is cleared before running the rest of the jobs
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3  # Updated to v3
@@ -40,9 +52,9 @@ jobs:
       - name: List Files in Directory
         run: ls -alh .
 
-      # Explicitly use v4 to upload the artifact and force fetch the latest version
+      # Explicitly use v4 to upload the artifact
       - name: Upload Dependency Check Report
-        uses: actions/upload-artifact@v4  # Explicitly force v4
+        uses: actions/upload-artifact@v4  # Ensure v4 is used
         with:
           name: dependency-check-report
           path: dependency-check-report.html
@@ -63,9 +75,9 @@ jobs:
           pip install bandit
           bandit -r . -ll -iii --exit-zero -o bandit-report.txt -f txt || echo "Bandit scan completed with issues"
 
-      # Explicitly use v4 to upload the artifact and force fetch the latest version
+      # Explicitly use v4 to upload the artifact
       - name: Upload Bandit Report as an Artifact
-        uses: actions/upload-artifact@v4  # Explicitly force v4
+        uses: actions/upload-artifact@v4  # Ensure v4 is used
         with:
           name: bandit-report
           path: bandit-report.txt
@@ -107,9 +119,9 @@ jobs:
       - name: List Files in Directory
         run: ls -alh .
 
-      # Explicitly use v4 to upload the artifact and force fetch the latest version
+      # Explicitly use v4 to upload the artifact
       - name: Upload Reports
-        uses: actions/upload-artifact@v4  # Explicitly force v4
+        uses: actions/upload-artifact@v4  # Ensure v4 is used
         with:
           name: scan-reports
           path: |
