@@ -40,7 +40,7 @@ jobs:
       - name: Upload Dependency Check Report
         uses: actions/upload-artifact@v3  # Use upload-artifact to handle single files
         with:
-          name: dependency-check-report  # Give the artifact a name
+          name: pages-artifact  # Give the artifact a name
           path: ./dependency-check-report.html  # Specify the report path
 
   sast:
@@ -63,7 +63,7 @@ jobs:
       - name: Upload Bandit Report
         uses: actions/upload-artifact@v3  # Use upload-artifact to handle single files
         with:
-          name: bandit-report  # Give the artifact a name
+          name: pages-artifact  # Give the artifact a name
           path: ./bandit-report.txt  # Specify the Bandit report path
 
   deploy:
@@ -75,3 +75,5 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v1
+        with:
+          artifact-name: pages-artifact
