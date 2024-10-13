@@ -78,25 +78,3 @@ jobs:
         with:
           name: github-pages-artifact
           path: ./bandit-report.txt
-
-  deploy:
-    needs: [dependency-check, sast]
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    steps:
-      - name: Check for Symlinks (Recursive Search)
-        run: |
-          echo "Checking for symlinks across the workspace..."
-          find . -type l -exec ls -lah {} \; || echo "No symlinks found."
-
-      - name: Check for Hard Links
-        run: |
-          echo "Checking for hard links..."
-          find . -type f -links +1 || echo "No hard links found."
-
-      - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v1
-        with:
-          artifact_name: github-pages-artifact
