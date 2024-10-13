@@ -27,3 +27,34 @@ jobs:
         with:
           name: trivy-sca-json-report
           path: ./trivy-report.json
+
+
+  sast-bandit:
+    needs: sca-trivy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+
+      - name: Run Bandit (SAST Scan) and Generate HTML Report
+        run: |
+          pip install bandit
+          bandit -r . -ll -iii -f html -o bandit-report.html || echo "Bandit scan completed with issues"
+
+      - name: Verify Bandit HTML Report Exists
+        run: |
+          if [ -f "bandit-report.html" ]; then
+            echo "Bandit HTML report generated successfully."
+          else
+            echo "Error: Bandit HTML report not found!" && exit 1
+          fi
+
+      - name: Upload Bandit HTML Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: bandit-sast-html-report
+          path: ./bandit-report.html
