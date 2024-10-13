@@ -8,39 +8,23 @@ on:
 
 jobs:
 
-  sca-safety:
+  sca-trivy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.8'
-
-      - name: Install Python dependencies
+      - name: Install Trivy
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          sudo apt-get install -y wget
+          wget https://github.com/aquasecurity/trivy/releases/download/v0.20.2/trivy_0.20.2_Linux-64bit.deb
+          sudo dpkg -i trivy_0.20.2_Linux-64bit.deb
 
-      - name: Install Safety
+      - name: Run Trivy SCA Scan
         run: |
-          pip install safety
+          trivy fs --scanners vuln --severity HIGH,CRITICAL --format json -o trivy-report.json .
 
-      - name: Run Safety with API Key
-        run: |
-          safety scan --file=requirements.txt --output html --save-html safety-report.html --key ${{ secrets.SAFETY_API_KEY }}
-
-      - name: Verify Safety HTML Report Exists
-        run: |
-          if [ -f "safety-report.html" ]; then
-            echo "Safety HTML report generated successfully."
-          else
-            echo "Error: Safety HTML report not found!" && exit 1
-          fi
-
-      - name: Upload Safety HTML Report
+      - name: Upload Trivy JSON Report
         uses: actions/upload-artifact@v3
         with:
-          name: safety-sca-html-report
-          path: ./safety-report.html
+          name: trivy-sca-json-report
+          path: ./trivy-report.json
