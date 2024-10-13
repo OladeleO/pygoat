@@ -33,8 +33,13 @@ jobs:
         run: |
           ${GITHUB_WORKSPACE}/dependency-check/dependency-check/bin/dependency-check.sh --project "MyProject" --scan . --out . --format HTML --failOnCVSS 9 --disableAssembly || echo "Vulnerabilities found"
 
-      - name: List Files in Directory (Debugging Step)
-        run: ls -alh .
+      - name: Verify Dependency Check Report Exists
+        run: |
+          if [ -f "dependency-check-report.html" ]; then
+            echo "Dependency Check report generated successfully."
+          else
+            echo "Error: Dependency Check report not found!" && exit 1
+          fi
 
       # Upload the Dependency Check report as an artifact
       - name: Upload Dependency Check Report
@@ -58,6 +63,14 @@ jobs:
         run: |
           pip install bandit
           bandit -r . -ll -iii --exit-zero -o bandit-report.txt -f txt || echo "Bandit scan completed with issues"
+
+      - name: Verify Bandit Report Exists
+        run: |
+          if [ -f "bandit-report.txt" ]; then
+            echo "Bandit report generated successfully."
+          else
+            echo "Error: Bandit report not found!" && exit 1
+          fi
 
       # Upload the Bandit report as an artifact
       - name: Upload Bandit Report
