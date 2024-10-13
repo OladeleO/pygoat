@@ -1,6 +1,6 @@
 name: CI/CD Pipeline
 
-# Trigger pipeline on push, pull_request, and manual workflow_dispatch
+# Trigger on push, pull request, or manually
 on:
   push:
   pull_request:
@@ -8,25 +8,13 @@ on:
 
 jobs:
 
-  setup:
-    runs-on: ubuntu-latest
-    steps:
-      # This step clears the cache of the runner for old actions and tools
-      - name: Clear Runner Cache
-        run: |
-          echo "Clearing GitHub Runner Cache"
-          rm -rf ${{ runner.tool_cache }}
-          rm -rf ${{ runner.cache }}
-          echo "Cache cleared"
-
   dependency-check:
-    needs: setup  # Ensure cache is cleared before running the rest of the jobs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3  # Updated to v3
+      - uses: actions/checkout@v3  # Checkout code
 
       - name: Set up Python
-        uses: actions/setup-python@v4  # Updated to v4
+        uses: actions/setup-python@v4  # Set up Python 3.8
         with:
           python-version: '3.8'
 
@@ -41,32 +29,28 @@ jobs:
           unzip dependency-check-6.5.3-release.zip -d dependency-check
           ls -alh dependency-check/
 
-      - name: Ensure script is executable
-        run: chmod +x ${GITHUB_WORKSPACE}/dependency-check/dependency-check/bin/dependency-check.sh
-
       - name: Run Dependency Check
         run: |
           ${GITHUB_WORKSPACE}/dependency-check/dependency-check/bin/dependency-check.sh --project "MyProject" --scan . --out . --format HTML --failOnCVSS 9 --disableAssembly || echo "Vulnerabilities found"
 
-      # Step to verify file presence
       - name: List Files in Directory
         run: ls -alh .
 
-      # Explicitly use an exact version of v4 to upload the artifact
-      - name: Upload Dependency Check Report
-        uses: actions/upload-artifact@v4.0.2  # Explicitly pin exact version
+      # Deploy artifact (Dependency Check Report) to GitHub Pages
+      - name: Deploy report to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          name: dependency-check-report
-          path: dependency-check-report.html
+          github_token: ${{ secrets.GITHUB_TOKEN }}  # Use the built-in GitHub token
+          publish_dir: .  # This directory should contain your artifact (e.g., dependency-check-report.html)
 
   sast:
     needs: dependency-check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3  # Updated to v3
+      - uses: actions/checkout@v3  # Checkout code
 
       - name: Set up Python
-        uses: actions/setup-python@v4  # Updated to v4
+        uses: actions/setup-python@v4
         with:
           python-version: '3.8'
 
@@ -75,18 +59,18 @@ jobs:
           pip install bandit
           bandit -r . -ll -iii --exit-zero -o bandit-report.txt -f txt || echo "Bandit scan completed with issues"
 
-      # Explicitly use an exact version of v4 to upload the artifact
-      - name: Upload Bandit Report as an Artifact
-        uses: actions/upload-artifact@v4.0.2  # Explicitly pin exact version
+      # Deploy Bandit report to GitHub Pages
+      - name: Deploy Bandit report to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          name: bandit-report
-          path: bandit-report.txt
+          github_token: ${{ secrets.GITHUB_TOKEN }}  # Use the built-in GitHub token
+          publish_dir: .  # This directory should contain your artifact (e.g., bandit-report.txt)
 
   container-and-dast-scan:
     needs: sast
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3  # Updated to v3
+      - uses: actions/checkout@v3  # Checkout code
 
       - name: Build Docker Image
         run: |
@@ -115,20 +99,8 @@ jobs:
           report: true
           report_format: 'html'
 
-      # Step to verify file presence before uploading
       - name: List Files in Directory
         run: ls -alh .
 
-      # Explicitly use an exact version of v4 to upload the artifact
-      - name: Upload Reports
-        uses: actions/upload-artifact@v4.0.2  # Explicitly pin exact version
-        with:
-          name: scan-reports
-          path: |
-            trivy-report.json
-            zap-report.html
-
-      - name: Stop and Remove Docker Container
-        run: |
-          docker stop pygoat-container
-          docker rm pygoat-container
+      # Deploy Trivy and OWASP ZAP reports to GitHub Pages
+      - name:
