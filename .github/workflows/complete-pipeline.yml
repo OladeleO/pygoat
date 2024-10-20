@@ -30,7 +30,7 @@ jobs:
 
 
   sast-bandit:
-    needs: sca-trivy
+    # needs: sca-trivy
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
