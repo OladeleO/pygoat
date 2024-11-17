@@ -36,7 +36,7 @@ jobs:
       # Step 4: Verify Safety Report Exists
       - name: Verify Safety Report Exists
         run: |
-          if [ -s "safety-report.txt" ]; then
+          if [ -s "safety-report.json" ]; then
             echo "Safety report generated successfully."
           else
             echo "Error: Safety report is empty or not found!" && exit 1
