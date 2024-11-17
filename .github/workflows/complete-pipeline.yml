@@ -12,27 +12,37 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # Step 2: Install Dependencies for Safety Scan
-      - name: Install Python dependencies
+      # Step 1: Set up Python environment
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+
+      # Step 2: Install Python dependencies
+      - name: Install Python Dependencies
         run: |
           pip install safety
           if [ -f "requirements.txt" ]; then
             pip install -r requirements.txt
           else
             echo "Error: requirements.txt not found!" && exit 1
+          fi
 
+      # Step 3: Run Safety (SCA Scan)
       - name: Run Safety (SCA Scan)
         run: |
           safety check --file=requirements.txt --output text > safety-report.txt || echo "Safety scan completed with issues"
-      
+
+      # Step 4: Verify Safety Report Exists
       - name: Verify Safety Report Exists
         run: |
-          if [ -f "safety-report.txt" ]; then
+          if [ -s "safety-report.txt" ]; then
             echo "Safety report generated successfully."
           else
-            echo "Error: Safety report not found!" && exit 1
+            echo "Error: Safety report is empty or not found!" && exit 1
           fi
 
+      # Step 5: Upload Safety Report
       - name: Upload Safety Report
         uses: actions/upload-artifact@v3
         with:
