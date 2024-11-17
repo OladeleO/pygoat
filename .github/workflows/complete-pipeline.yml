@@ -31,7 +31,7 @@ jobs:
       # Step 3: Run Safety (SCA Scan)
       - name: Run Safety (SCA Scan)
         run: |
-          safety check --file=requirements.txt --output text > safety-report.txt || echo "Safety scan completed with issues"
+          safety check --file=requirements.txt --format json --output safety-report.json || echo "Safety scan completed with issues"
 
       # Step 4: Verify Safety Report Exists
       - name: Verify Safety Report Exists
@@ -47,7 +47,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: safety-sca-report
-          path: ./safety-report.txt
+          path: ./safety-report.json
 
 
   sast-bandit:
