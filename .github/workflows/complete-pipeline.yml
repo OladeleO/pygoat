@@ -7,26 +7,29 @@ on:
   workflow_dispatch:
 
 jobs:
-  # sca-trivy:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v3
+  sca-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
 
-  #     - name: Install Trivy
-  #       run: |
-  #         sudo apt-get install -y wget
-  #         wget https://github.com/aquasecurity/trivy/releases/download/v0.20.2/trivy_0.20.2_Linux-64bit.deb
-  #         sudo dpkg -i trivy_0.20.2_Linux-64bit.deb
+      - name: Run Safety (SCA Scan)
+        run: |
+          safety check --output text > safety-report.txt || echo "Safety scan completed with issues"
 
-  #     - name: Run Trivy SCA Scan
-  #       run: |
-  #         trivy fs --security-checks vuln --severity HIGH,CRITICAL --format json -o trivy-report.json .
+      # Step 6: Verify Safety Report Exists
+      - name: Verify Safety Report Exists
+        run: |
+          if [ -f "safety-report.txt" ]; then
+            echo "Safety report generated successfully."
+          else
+            echo "Error: Safety report not found!" && exit 1
+          fi
 
-  #     - name: Upload Trivy JSON Report
-  #       uses: actions/upload-artifact@v3
-  #       with:
-  #         name: trivy-sca-json-report
-  #         path: ./trivy-report.json
+      - name: Upload Safety Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: safety-sca-report
+          path: ./safety-report.txt
 
 
   sast-bandit:
