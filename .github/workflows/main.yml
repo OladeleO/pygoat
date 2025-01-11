@@ -93,21 +93,17 @@ jobs:
     runs-on: ubuntu-latest
     needs: [sca_safety, sast_bandit, secrets_detection]
     steps:
-      # Step 1: Checkout the Repository
+      # Step 1: Checkout Code
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Step 2: Create a Docker Network
-      - name: Create Docker Network
-        run: docker network create zap-network
-
-      # Step 3: Deploy PyGoat on the Custom Network
+      # Step 2: Deploy PyGoat
       - name: Deploy PyGoat
         run: |
           docker pull pygoat/pygoat:latest
-          docker run -d --name pygoat-dast --network zap-network -p 8000:8000 pygoat/pygoat:latest
+          docker run -d --name pygoat-dast -p 8000:8000 pygoat/pygoat:latest
 
-      # Step 4: Wait for PyGoat to Start
+      # Step 3: Wait for PyGoat to Start
       - name: Wait for PyGoat to Start
         run: |
           for i in {1..10}; do
@@ -119,19 +115,17 @@ jobs:
             fi
           done
 
-      # Step 5: Run OWASP ZAP Baseline Scan
-      - name: Run OWASP ZAP Baseline Scan
-        uses: zaproxy/action-baseline@v0.14.0
+      # Step 4: Run Dastardly Action
+      - name: Run Dastardly Action Step
+        continue-on-error: true # Allow pipeline to continue even if vulnerabilities are found
+        uses: PortSwigger/dastardly-github-action@main
         with:
-          target: 'http://pygoat-dast:8000' # Target the PyGoat container
-          cmd_options: '-a' # Include all alerts
-          artifact_name: zap_scan # Name the report artifact
-        env:
-          DOCKER_NETWORK: zap-network # Use the custom Docker network
+          target-url: 'http://localhost:8000'
 
-      # Step 6: Cleanup Docker Environment
-      - name: Cleanup Docker Environment
-        run: |
-          docker stop pygoat-dast || true
-          docker rm pygoat-dast || true
-          docker network rm zap-network || true
+      # Step 5: Publish Dastardly Report
+      - name: Publish Dastardly Report
+        if: always() # Ensure this step runs regardless of the scan results
+        uses: mikepenz/action-junit-report@v3
+        with:
+          report_paths: '**/dastardly-report.xml' # Path to the generated Dastardly report
+          require_tests: true
