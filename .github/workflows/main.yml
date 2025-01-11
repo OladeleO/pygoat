@@ -98,10 +98,22 @@ jobs:
         ports:
           - 8000:8000
     steps:
+      # Step 1: Checkout Code
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Step 2: Retrieve Service IP Address
+      - name: Get Service IP Address
+        id: get_ip
+        run: |
+          export APP_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' app)
+          echo "APP_IP=$APP_IP" >> $GITHUB_ENV
+
+      # Step 3: Run OWASP ZAP Baseline Scan
       - name: Run OWASP ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.14.0
         with:
-          target: 'http://app:8000/sql'
+          target: "http://$APP_IP:8000/sql"
           cmd_options: '-a'
           artifact_name: zap_scan
 
