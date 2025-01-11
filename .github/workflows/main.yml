@@ -92,7 +92,7 @@ jobs:
   dast_scan:
     runs-on: ubuntu-latest
     needs: [sca_safety, sast_bandit, secrets_detection]
-    ervices:
+    services:
       app:
         image: pygoat/pygoat:latest
         ports:
