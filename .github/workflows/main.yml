@@ -119,11 +119,11 @@ jobs:
     - name: Run OWASP ZAP Baseline Scan
       uses: zaproxy/action-baseline@v0.14.0
       with:
-        target: 'http://pygoat-dast:8000' # Refer to PyGoat by container name
+        target: 'http://pygoat-dast:8000' # Use the PyGoat container hostname
         cmd_options: '-a'
         artifact_name: zap_scan
       env:
-        DOCKER_NETWORK: zap-network # Use the custom network created earlier
+        DOCKER_NETWORK: zap-network # Explicitly use zap-network
 
     - name: Cleanup Docker Environment
       run: |
