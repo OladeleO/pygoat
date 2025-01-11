@@ -93,27 +93,40 @@ jobs:
     runs-on: ubuntu-latest
     needs: [sca_safety, sast_bandit, secrets_detection]
     steps:
-      - name: Pull PyGoat Docker Image from Docker Hub
-        run: |
-          docker pull pygoat/pygoat:latest
-          docker run -d --name pygoat-dast -p 8000:8000 pygoat/pygoat:latest
+    - name: Checkout Code
+      uses: actions/checkout@v4
 
-      - name: Wait for PyGoat to Start
-        run: |
-          for i in {1..10}; do
-            if curl -s http://localhost:8080 >/dev/null; then
-              echo "PyGoat is up!"
-              break
-            else
-              echo "Waiting for PyGoat..." && sleep 5
-            fi
-          done
+    - name: Create Docker Network
+      run: |
+        docker network create zap-network
 
+    - name: Deploy PyGoat
+      run: |
+        docker pull pygoat/pygoat:latest
+        docker run -d --name pygoat-dast --network zap-network -p 8000:8000 pygoat/pygoat:latest
 
-      - name: Run OWASP ZAP Baseline Scan
-        uses: zaproxy/action-baseline@v0.14.0
-        with:
-          target: 'http://localhost:8080' # Target URL for scanning (PyGoat in this case)
-          token: ${{ secrets.GITHUB_TOKEN }} # GitHub token to authenticate the action
-          cmd_options: '-a' # Optional: Include all alerts
-          artifact_name: zap_scan # Optional: Name the scan report artifact
+    - name: Wait for PyGoat to Start
+      run: |
+        for i in {1..10}; do
+          if curl -s http://localhost:8000 >/dev/null; then
+            echo "PyGoat is up!"
+            break
+          else
+            echo "Waiting for PyGoat..." && sleep 5
+          fi
+        done
+
+    - name: Run OWASP ZAP Baseline Scan
+      uses: zaproxy/action-baseline@v0.14.0
+      with:
+        target: 'http://pygoat-dast:8000' # Refer to PyGoat by container name
+        cmd_options: '-a'
+        artifact_name: zap_scan
+      env:
+        DOCKER_NETWORK: zap-network # Use the custom network created earlier
+
+    - name: Cleanup Docker Environment
+      run: |
+        docker stop pygoat-dast || true
+        docker rm pygoat-dast || true
+        docker network rm zap-network || true
