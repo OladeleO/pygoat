@@ -77,10 +77,17 @@ jobs:
           curl -sSL https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks-linux-amd64 -o gitleaks
           chmod +x gitleaks
 
+      - name: Verify Gitleaks Installation
+        run: |
+          file gitleaks
+          ./gitleaks version
+
       - name: Run Gitleaks
-        run: ./gitleaks detect --source . --report-path=gitleaks-report.json || echo "Secrets scan completed with issues"
+        run: |
+          ./gitleaks detect --source . --report-path=gitleaks-report.json || echo "Secrets scan completed with issues"
 
       - name: Upload Gitleaks Report
+        if: always()
         uses: actions/upload-artifact@v3
         with:
           name: gitleaks-secrets-report
