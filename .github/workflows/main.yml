@@ -105,23 +105,10 @@ jobs:
           done
 
 
-      - name: Pull OWASP ZAP Docker Image
-        run: |
-          docker pull owasp/zap2docker
-
-
-      - name: Run OWASP ZAP DAST Scan
-        run: |
-          docker run --rm -v $(pwd):/zap/wrk:rw -t owasp/zap2docker-weekly zap-baseline.py -t http://localhost:8080 -r zap-report.html || echo "DAST scan completed with issues"
-      
-
-      - name: Upload OWASP ZAP Report
-        uses: actions/upload-artifact@v3
+      - name: Run OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.14.0
         with:
-          name: zap-dast-report
-          path: zap-report.html
-
-      - name: Cleanup Docker Environment
-        run: |
-          docker stop pygoat-dast
-          docker rm pygoat-dast
+          target: 'http://localhost:8080' # Target URL for scanning (PyGoat in this case)
+          token: ${{ secrets.GITHUB_TOKEN }} # GitHub token to authenticate the action
+          cmd_options: '-a' # Optional: Include all alerts
+          artifact_name: zap_scan # Optional: Name the scan report artifact
