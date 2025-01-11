@@ -92,24 +92,38 @@ jobs:
   dast_scan:
     runs-on: ubuntu-latest
     needs: [sca_safety, sast_bandit, secrets_detection]
-    services:
+    ervices:
       app:
         image: pygoat/pygoat:latest
         ports:
           - 8000:8000
+        options: >-
+          --health-cmd="curl -L -f http://localhost:8000 || exit 1"
+          --health-interval=10s
+          --health-retries=5
+          --health-timeout=5s
     steps:
-      # Step 1: Checkout Code
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Step 2: Retrieve Service IP Address
+      - name: Wait for Service to Start
+        run: |
+          echo "Waiting for PyGoat (app) service to start..."
+          for i in {1..10}; do
+            if curl -L -s http://localhost:8000 >/dev/null; then
+              echo "PyGoat service is up!"
+              break
+            else
+              echo "Waiting for PyGoat service..." && sleep 5
+            fi
+          done
+
       - name: Get Service IP Address
         id: get_ip
         run: |
-          export APP_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' app)
+          export APP_IP=$(docker inspect -f '{{range.NetworkSettings.Networks.github_network}}{{.IPAddress}}{{end}}' app)
           echo "APP_IP=$APP_IP" >> $GITHUB_ENV
 
-      # Step 3: Run OWASP ZAP Baseline Scan
       - name: Run OWASP ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.14.0
         with:
