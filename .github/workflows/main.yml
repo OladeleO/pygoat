@@ -101,8 +101,8 @@ jobs:
     steps:
       - name: Pull PyGoat Docker Image from Docker Hub
         run: |
-          docker pull we45/pygoat:v1.3.0
-          docker run -d --name pygoat-dast -p 8080:8080 we45/pygoat:v1.3.0
+          docker pull pygoat/pygoat:latest
+          docker run -d --name pygoat-dast -p 8080:8080 pygoat/pygoat:latest
 
       - name: Wait for PyGoat to Be Ready
         run: |
