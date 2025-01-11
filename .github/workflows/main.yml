@@ -107,7 +107,7 @@ jobs:
 
       - name: Pull OWASP ZAP Docker Image
         run: |
-          docker pull owasp/zap2docker-weekly
+          docker pull owasp/zap2docker
 
 
       - name: Run OWASP ZAP DAST Scan
