@@ -97,15 +97,19 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Step 2: Start Services Using Docker Compose
-      - name: Start PyGoat with Docker Compose
+      # Step 2: Setup Docker Compose
+      - name: Set up Docker Compose
+        uses: docker/compose-action@v2
+        with:
+          compose-file: docker-compose.yml
+
+      # Step 3: Create Docker Compose Configuration
+      - name: Create Docker Compose File
         run: |
           echo "version: '3.8'
           services:
             app:
               image: pygoat/pygoat:latest
-              networks:
-                zap-net:
               ports:
                 - '8000:8000'
               healthcheck:
@@ -115,18 +119,21 @@ jobs:
                 start_period: 5s
                 timeout: 2s
           networks:
-            zap-net:
+            default:
               driver: bridge" > docker-compose.yml
-          docker-compose up -d
 
-      # Step 3: Retrieve Service IP Address
+      # Step 4: Start Services Using Docker Compose
+      - name: Start Docker Compose
+        run: docker-compose up -d
+
+      # Step 5: Retrieve Service IP Address
       - name: Get PyGoat Service IP Address
         id: get_ip
         run: |
-          export APP_IP=$(docker inspect -f '{{range.NetworkSettings.Networks.zap-net}}{{.IPAddress}}{{end}}' app)
+          export APP_IP=$(docker inspect -f '{{range.NetworkSettings.Networks.default}}{{.IPAddress}}{{end}}' app)
           echo "APP_IP=$APP_IP" >> $GITHUB_ENV
 
-      # Step 4: Run OWASP ZAP Baseline Scan
+      # Step 6: Run OWASP ZAP Baseline Scan
       - name: Run OWASP ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.14.0
         with:
@@ -134,8 +141,8 @@ jobs:
           cmd_options: '-a'
           artifact_name: zap_scan
 
-      # Step 5: Cleanup
-      - name: Cleanup Docker Environment
+      # Step 7: Cleanup Docker Compose
+      - name: Clean Up
         run: docker-compose down
     
     
