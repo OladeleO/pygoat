@@ -67,32 +67,25 @@ jobs:
 
   # Job 3: Secrets Detection
   secrets_detection:
+    name: Run Gitleaks
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch full history for Gitleaks to scan commit history
 
-      - name: Install Gitleaks
-        run: |
-          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.17.0/gitleaks-linux-amd64 -o gitleaks
-          chmod +x gitleaks
-          ./gitleaks version
+      - name: Scan for Secrets with Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Automatically provided by GitHub Actions
 
-      - name: Verify Gitleaks Installation
-        run: |
-          file gitleaks
-          ./gitleaks version
-
-      - name: Run Gitleaks
-        run: |
-          ./gitleaks detect --source . --report-path=gitleaks-report.json || echo "Secrets scan completed with issues"
-
-      - name: Upload Gitleaks Report
+      - name: Upload Gitleaks Artifact
         if: always()
         uses: actions/upload-artifact@v3
         with:
           name: gitleaks-secrets-report
-          path: gitleaks-report.json
+          path: gitleaks.sarif
 
   # Job 4: Dynamic Application Security Testing (DAST)
   dast_scan:
