@@ -92,44 +92,97 @@ jobs:
   dast_scan:
     runs-on: ubuntu-latest
     needs: [sca_safety, sast_bandit, secrets_detection]
-    services:
-      app:
-        image: pygoat/pygoat:latest
-        ports:
-          - 8000:8000
-        options: >-
-          --health-cmd="curl -L -f http://localhost:8000 || exit 1"
-          --health-interval=10s
-          --health-retries=5
-          --health-timeout=5s
     steps:
+      # Step 1: Checkout Code
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Wait for Service to Start
+      # Step 2: Start Services Using Docker Compose
+      - name: Start PyGoat with Docker Compose
         run: |
-          echo "Waiting for PyGoat (app) service to start..."
-          for i in {1..10}; do
-            if curl -L -s http://localhost:8000 >/dev/null; then
-              echo "PyGoat service is up!"
-              break
-            else
-              echo "Waiting for PyGoat service..." && sleep 5
-            fi
-          done
+          echo "version: '3.8'
+          services:
+            app:
+              image: pygoat/pygoat:latest
+              networks:
+                zap-net:
+              ports:
+                - '8000:8000'
+              healthcheck:
+                test: ['CMD', 'curl', '-L', 'http://localhost:8000']
+                interval: 10s
+                retries: 5
+                start_period: 5s
+                timeout: 2s
+          networks:
+            zap-net:
+              driver: bridge" > docker-compose.yml
+          docker-compose up -d
 
-      - name: Get Service IP Address
+      # Step 3: Retrieve Service IP Address
+      - name: Get PyGoat Service IP Address
         id: get_ip
         run: |
-          export APP_IP=$(docker inspect -f '{{range.NetworkSettings.Networks.github_network}}{{.IPAddress}}{{end}}' app)
+          export APP_IP=$(docker inspect -f '{{range.NetworkSettings.Networks.zap-net}}{{.IPAddress}}{{end}}' app)
           echo "APP_IP=$APP_IP" >> $GITHUB_ENV
 
+      # Step 4: Run OWASP ZAP Baseline Scan
       - name: Run OWASP ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.14.0
         with:
           target: "http://$APP_IP:8000/sql"
           cmd_options: '-a'
           artifact_name: zap_scan
+
+      # Step 5: Cleanup
+      - name: Cleanup Docker Environment
+        run: docker-compose down
+    
+    
+    
+    
+    
+    
+    
+    
+    # services:
+    #   app:
+    #     image: pygoat/pygoat:latest
+    #     ports:
+    #       - 8000:8000
+    #     options: >-
+    #       --health-cmd="curl -L -f http://localhost:8000 || exit 1"
+    #       --health-interval=10s
+    #       --health-retries=5
+    #       --health-timeout=5s
+    # steps:
+    #   - name: Checkout Code
+    #     uses: actions/checkout@v4
+
+    #   - name: Wait for Service to Start
+    #     run: |
+    #       echo "Waiting for PyGoat (app) service to start..."
+    #       for i in {1..10}; do
+    #         if curl -L -s http://localhost:8000 >/dev/null; then
+    #           echo "PyGoat service is up!"
+    #           break
+    #         else
+    #           echo "Waiting for PyGoat service..." && sleep 5
+    #         fi
+    #       done
+
+    #   - name: Get Service IP Address
+    #     id: get_ip
+    #     run: |
+    #       export APP_IP=$(docker inspect -f '{{range.NetworkSettings.Networks.github_network}}{{.IPAddress}}{{end}}' app)
+    #       echo "APP_IP=$APP_IP" >> $GITHUB_ENV
+
+    #   - name: Run OWASP ZAP Baseline Scan
+    #     uses: zaproxy/action-baseline@v0.14.0
+    #     with:
+    #       target: "http://$APP_IP:8000/sql"
+    #       cmd_options: '-a'
+    #       artifact_name: zap_scan
 
       # # Step 5: Publish Dastardly Report
       # - name: Publish Dastardly Report
