@@ -98,11 +98,12 @@ jobs:
         ports:
           - 8000:8000
     steps:
-      - name: Start OWASP ZAP Baseline Scan
+      - name: Run OWASP ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.14.0
         with:
-          target: http://app:8000
-          cmd_options: -a
+          target: 'http://app:8000/sql'
+          cmd_options: '-a'
+          artifact_name: zap_scan
 
       # # Step 5: Publish Dastardly Report
       # - name: Publish Dastardly Report
