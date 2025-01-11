@@ -124,6 +124,7 @@ jobs:
           target: "http://localhost:8000/sql"
           cmd_options: '-a'
           artifact_name: zap_scan
+          allow_issue_writing: false # Disable automatic issue creation
     
     
     
