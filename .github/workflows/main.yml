@@ -35,7 +35,7 @@ jobs:
           safety check --file=requirements.txt --json > safety-report.json || echo "Safety scan completed with issues"
 
       - name: Upload Safety Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: safety-sca-report
           path: safety-report.json
@@ -60,7 +60,7 @@ jobs:
           bandit -r . -ll -iii -f html -o bandit-report.html || echo "Bandit scan completed with issues"
 
       - name: Upload Bandit Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: bandit-sast-html-report
           path: bandit-report.html
@@ -83,7 +83,7 @@ jobs:
 
       - name: Upload Gitleaks Artifact
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: gitleaks-secrets-report
           path: gitleaks.sarif
